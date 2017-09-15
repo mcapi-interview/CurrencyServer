@@ -37,26 +37,12 @@ public class CurrencyService implements  ICurrencyService{
         return currencyRepo.findByCode(code.toUpperCase());
     }
 
-    public Exchange convertCurrency(String baseCode, String targetCode){
-
-        baseCode = baseCode.toUpperCase();
-        targetCode = targetCode.toUpperCase();
-
-        Currency baseCurrency = this.getCurrencyByCode(baseCode);
-        Currency targetCurrency = this.getCurrencyByCode(targetCode);
-
-        if(null == baseCurrency){
-            //throw error
-        }
-
-        if(null == targetCurrency){
-            //throw error
-        }
+    public Exchange convertCurrency(Currency baseCurrency, Currency targetCurrency){
 
         Exchange exchange = new Exchange();
 
-        exchange.setBaseCode(baseCode);
-        exchange.setTargetCode(targetCode);
+        exchange.setBaseCode(baseCurrency.getCode());
+        exchange.setTargetCode(targetCurrency.getCode());
 
         Float rate = baseCurrency.getRate()/targetCurrency.getRate();
 

@@ -1,5 +1,6 @@
 package com.mastercard.api.hiring.AppServer.controllers;
 
+import com.mastercard.api.hiring.AppServer.ExceptionHandler.InvalidCurrencyException;
 import com.mastercard.api.hiring.AppServer.Service.AlertService;
 import com.mastercard.api.hiring.AppServer.Service.CurrencyService;
 import com.mastercard.api.hiring.AppServer.entity.Alert;
@@ -10,6 +11,7 @@ import com.mastercard.api.hiring.AppServer.model.Success;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -37,19 +39,50 @@ public class ApiController {
 
     @RequestMapping("exchange")
     @ResponseBody
-    Exchange exchangeRate(@RequestParam("baseCode") String baseCode, @RequestParam("targetCode")String targetCode) {
+    Exchange exchangeRate(@RequestParam("baseCode") String baseCode, @RequestParam("targetCode")String targetCode) throws InvalidCurrencyException {
 
-        return currencyService.convertCurrency(baseCode,targetCode);
+        baseCode = baseCode.toUpperCase();
+        targetCode = targetCode.toUpperCase();
+
+        Currency baseCurrency = currencyService.getCurrencyByCode(baseCode);
+        Currency targetCurrency = currencyService.getCurrencyByCode(targetCode);
+
+
+        if(null == baseCurrency){
+            throw new InvalidCurrencyException(baseCode);
+        }
+
+        if(null == targetCurrency){
+            throw new InvalidCurrencyException(targetCode);
+        }
+
+        return currencyService.convertCurrency(baseCurrency,targetCurrency);
     }
 
     @RequestMapping(value = "alert",method = RequestMethod.POST)
     @ResponseBody
-    Success createAlert(@RequestBody AlertRequest alertRequest) {
+    Success createAlert(@RequestBody AlertRequest alertRequest) throws MissingServletRequestParameterException, InvalidCurrencyException {
 
         String code = alertRequest.getCode();
+
+        if(code == null){
+            throw new MissingServletRequestParameterException("code", "String");
+        }
+
         Float targetRate = alertRequest.getTargetRate();
 
+        if(targetRate == null){
+
+            throw new MissingServletRequestParameterException("targetRate", "float");
+        }
+
         Currency currency = currencyService.getCurrencyByCode(code);
+
+        if(currency == null){
+
+            throw new InvalidCurrencyException(code);
+        }
+
         Alert alert = new Alert(currency,targetRate);
 
         alertService.addAlert(alert);
